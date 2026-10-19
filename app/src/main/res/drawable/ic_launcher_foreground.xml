@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Crossed Blades Handles -->
+    <path
+        android:fillColor="#E5B869"
+        android:pathData="M33,75 L38,80 L35,83 L30,78 Z" />
+    <path
+        android:fillColor="#E5B869"
+        android:pathData="M75,75 L78,78 L73,83 L70,80 Z" />
+    <!-- Blade Guards -->
+    <path
+        android:fillColor="#FFD175"
+        android:pathData="M37,67 L45,71 L43,75 L35,71 Z" />
+    <path
+        android:fillColor="#FFD175"
+        android:pathData="M71,67 L73,71 L65,75 L63,71 Z" />
+    <!-- Crossed Blades -->
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M39,66 L68,34 L72,36 L43,70 Z" />
+    <path
+        android:fillColor="#CBD5E1"
+        android:pathData="M69,66 L65,70 L36,36 L40,34 Z" />
+    <!-- Dragon Wing Crest (Left) -->
+    <path
+        android:fillColor="#4DEEEA"
+        android:pathData="M54,42 C46,36 32,38 27,47 C33,48 40,53 45,58 C41,52 35,50 30,52 C35,56 42,62 48,65 Z" />
+    <!-- Dragon Wing Crest (Right) -->
+    <path
+        android:fillColor="#4DEEEA"
+        android:pathData="M54,42 C62,36 76,38 81,47 C75,48 68,53 63,58 C67,52 73,50 78,52 C73,56 66,62 60,65 Z" />
+    <!-- Central Dragon Core / Head -->
+    <path
+        android:fillColor="#FFC857"
+        android:pathData="M54,27 L59,37 L54,35 L49,37 Z" />
+    <path
+        android:fillColor="#E5B869"
+        android:pathData="M54,35 L62,45 L54,58 L46,45 Z" />
+    <!-- Core Rune Gem -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,41 L57,46 L54,51 L51,46 Z" />
+    <!-- Bottom Shield Arc -->
+    <path
+        android:fillColor="#E5B869"
+        android:pathData="M48,66 L54,74 L60,66 L54,69 Z" />
+</vector>

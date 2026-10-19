@@ -1,0 +1,6 @@
+{
+  "name": "Tyria Hub",
+  "description": "Guild Wars 2 touch deck and companion app for dual-screen Android handhelds like the AYN Thor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
