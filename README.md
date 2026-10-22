@@ -113,11 +113,14 @@ app/src/main/java/com/example/
 ./gradlew :app:installDebug
 ```
 
-### 🤖 Automated GitHub Actions CI/CD
+### 🤖 Automated GitHub Actions CI/CD & Releases
 A GitHub Actions workflow is pre-configured at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml):
 - Automatically triggers on every push and pull request to `main` / `master`.
-- Executes the full Robolectric unit test suite.
-- Builds and packages `tyria-hub-debug-apk` as a downloadable artifact under the GitHub repository's **Actions** tab for direct sideloading onto the AYN Thor or any Android device.
+- Executes the full Robolectric unit test suite and compiles the APK.
+- Builds and packages `tyria-hub-debug-apk` as an artifact under the **Actions** tab.
+- **Publishing Releases**:
+  - **Automated**: Push a Git tag (e.g., `git tag v1.0.0 && git push origin v1.0.0`) or run the workflow manually with the *Publish a GitHub Release* checkbox enabled. It will automatically build the APK and publish a formatted GitHub Release with `tyria-hub.apk` attached.
+  - **Manual**: Go to your repository on GitHub -> click **Releases** -> click **Draft a new release** -> choose a tag (e.g. `v1.0.0`) -> drag and drop your downloaded APK into the binaries box -> click **Publish release**.
 
 ---
 

@@ -3,13 +3,28 @@ name: Build Tyria Hub APK
 on:
   push:
     branches: [ "main", "master" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
+    inputs:
+      create_release:
+        description: 'Publish a GitHub Release with this build'
+        required: false
+        type: boolean
+        default: false
+      release_tag:
+        description: 'Tag for the release (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -59,8 +74,13 @@ jobs:
       - name: Build Debug APK
         run: ./gradlew :app:assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
-      - name: Upload Debug APK
-        uses: actions/upload-artifact@v5
+      - name: Prepare Release APK Asset
+        run: |
+          mkdir -p release-asset
+          cp app/build/outputs/apk/debug/*.apk release-asset/tyria-hub.apk
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: tyria-hub-debug-apk
@@ -72,8 +92,21 @@ jobs:
 
       - name: Upload Test Report on Failure
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: test-reports
           path: app/build/reports/tests/
           retention-days: 7
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name || inputs.release_tag }}
+          name: Tyria Hub ${{ github.ref_name || inputs.release_tag }}
+          files: release-asset/tyria-hub.apk
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
