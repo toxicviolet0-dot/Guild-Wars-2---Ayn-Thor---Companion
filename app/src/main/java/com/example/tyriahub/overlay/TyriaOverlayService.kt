@@ -6,10 +6,12 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import android.view.Display
 import android.view.Gravity
 import android.view.KeyEvent
@@ -106,7 +108,19 @@ class TyriaOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner, 
                 .build()
         }
 
-        startForeground(1001, notification)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    1001,
+                    notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else {
+                startForeground(1001, notification)
+            }
+        } catch (e: Exception) {
+            Log.e("TyriaOverlayService", "Failed to start foreground notification: ${e.message}", e)
+        }
     }
 
     fun attachOverlayToDisplay(preferredDisplayId: Int) {
@@ -213,9 +227,7 @@ class TyriaOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner, 
             setViewTreeViewModelStoreOwner(this@TyriaOverlayService)
             setContent {
                 CompositionLocalProvider(LocalContext provides windowContext) {
-                    val context = LocalContext.current
-                    val application = context.applicationContext as android.app.Application
-                    val viewModel = remember { MainViewModel(application) }
+                    val viewModel = remember { MainViewModel(this@TyriaOverlayService.application) }
                     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
                     TyriaHubAppContent(

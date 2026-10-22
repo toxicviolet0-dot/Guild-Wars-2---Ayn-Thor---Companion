@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 
 @Composable
 fun TouchButton(
@@ -44,11 +45,14 @@ fun TouchButton(
     gradient: Brush,
     borderColor: Color,
     isActivePressed: Boolean = false,
-    height: Dp = 48.dp,
+    height: Dp = Dp.Unspecified,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     testTag: String = "touch_button"
 ) {
+    val sizing = LocalDeckSizeConfig.current
+    val effectiveHeight = if (height != Dp.Unspecified) height else sizing.touchButtonHeight
+
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val isHighlighted = isPressed || isActivePressed
@@ -61,13 +65,13 @@ fun TouchButton(
     Box(
         modifier = modifier
             .scale(scale)
-            .height(height)
-            .clip(RoundedCornerShape(6.dp))
+            .height(effectiveHeight)
+            .clip(RoundedCornerShape(sizing.touchButtonCornerRadius))
             .background(gradient)
             .border(
                 width = if (isHighlighted) 2.dp else 1.dp,
                 color = if (isHighlighted) Color.White else borderColor,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(sizing.touchButtonCornerRadius)
             )
             .clickable(
                 interactionSource = interactionSource,
@@ -75,7 +79,7 @@ fun TouchButton(
                 onClick = onClick
             )
             .testTag(testTag)
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+            .padding(horizontal = sizing.touchButtonPaddingH, vertical = sizing.touchButtonPaddingV),
         contentAlignment = Alignment.Center
     ) {
         Column(
@@ -86,7 +90,7 @@ fun TouchButton(
             Text(
                 text = title,
                 color = if (isHighlighted) Color.White else Gw2Themes.TextBright,
-                fontSize = 11.5.sp,
+                fontSize = sizing.touchButtonTitleSp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -103,7 +107,7 @@ fun TouchButton(
                         Text(
                             text = subLabel,
                             color = if (isHighlighted) Gw2Themes.WaypointYellow else Gw2Themes.TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = sizing.touchButtonSubSp,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -115,7 +119,7 @@ fun TouchButton(
                         Text(
                             text = keyHint,
                             color = Gw2Themes.WaypointYellow,
-                            fontSize = 9.sp,
+                            fontSize = sizing.touchButtonKeySp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }

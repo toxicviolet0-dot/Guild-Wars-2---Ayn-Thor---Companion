@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 @Composable
@@ -29,11 +30,8 @@ fun MountsQoLView(
     onTriggerSkill: (slotName: String, actionLabel: String, keybind: String, isHeavy: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val btnHeight: Dp = when (state.sizeMode) {
-        "XS" -> 46.dp
-        "LG" -> 64.dp
-        else -> 54.dp
-    }
+    val sizing = LocalDeckSizeConfig.current
+    val btnHeight: Dp = sizing.mountBtnHeight
 
     val mountGrad = Brush.verticalGradient(listOf(Color(0xFF382B14), Color(0xFF1F170B)))
     val mountBorder = Color(0xFF7A5C2A)
@@ -45,14 +43,14 @@ fun MountsQoLView(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0A0C10))
-            .padding(12.dp)
+            .padding(sizing.cardPadding)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
     ) {
         Text(
             text = "🦅 Guild Wars 2 Mounts Quick-Deploy",
             color = Gw2Themes.GoldAccent,
-            fontSize = 13.sp,
+            fontSize = sizing.titleSp,
             fontWeight = FontWeight.Bold
         )
 

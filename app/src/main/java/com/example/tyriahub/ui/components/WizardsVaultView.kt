@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 data class VaultObjective(
@@ -53,6 +54,7 @@ fun WizardsVaultView(
     state: HubUiState,
     modifier: Modifier = Modifier
 ) {
+    val sizing = LocalDeckSizeConfig.current
     val completedIds = remember { mutableStateListOf<String>() }
 
     val dailyObjectives = remember {
@@ -81,9 +83,9 @@ fun WizardsVaultView(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0A0C10))
-            .padding(10.dp)
+            .padding(sizing.cardPadding)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
     ) {
         // Top Astral Acclaim Header
         Row(

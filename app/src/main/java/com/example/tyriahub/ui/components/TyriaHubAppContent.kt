@@ -23,6 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.example.tyriahub.theme.DeckSizeConfig
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubTab
 import com.example.tyriahub.ui.HubUiState
 import com.example.tyriahub.ui.MainViewModel
@@ -50,9 +54,12 @@ fun TyriaHubAppContent(
         surface = Color(0xFF11131A)
     )
 
-    MaterialTheme(colorScheme = customDarkScheme) {
-        val baseBg = if (state.amoledBlack) Color.Black else Color(0xFF090A0E)
-        val bgColor = if (isOverlay) baseBg.copy(alpha = state.overlayAlpha) else baseBg
+    val sizeConfig = remember(state.sizeMode) { DeckSizeConfig.forMode(state.sizeMode) }
+
+    CompositionLocalProvider(LocalDeckSizeConfig provides sizeConfig) {
+        MaterialTheme(colorScheme = customDarkScheme) {
+            val baseBg = if (state.amoledBlack) Color.Black else Color(0xFF090A0E)
+            val bgColor = if (isOverlay) baseBg.copy(alpha = state.overlayAlpha) else baseBg
 
         Box(
             modifier = modifier
@@ -115,7 +122,18 @@ fun TyriaHubAppContent(
                             CharactersView(
                                 state = state,
                                 onConnectApiKey = { viewModel.fetchAccountData(it) },
-                                onSelectCharacter = { viewModel.selectCharacter(it) }
+                                onSelectCharacter = { viewModel.selectCharacter(it) },
+                                onOpenInventory = { viewModel.selectTab(HubTab.INVENTORY) },
+                                onLoadExampleData = { viewModel.loadExampleData() },
+                                onClearExampleData = { viewModel.clearExampleData() }
+                            )
+                        }
+                        HubTab.INVENTORY -> {
+                            InventoryView(
+                                state = state,
+                                onSelectCharacter = { viewModel.selectCharacter(it) },
+                                onPasteItemToChat = { viewModel.pasteItemToChat(it) },
+                                onLoadExampleData = { viewModel.loadExampleData() }
                             )
                         }
                     }
@@ -190,4 +208,5 @@ fun TyriaHubAppContent(
             }
         }
     }
+}
 }

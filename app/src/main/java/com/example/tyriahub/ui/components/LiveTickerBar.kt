@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.model.ActiveBossStatus
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 
 @Composable
 fun LiveTickerBar(
@@ -35,13 +36,15 @@ fun LiveTickerBar(
     onCopyWaypoint: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    val sizing = LocalDeckSizeConfig.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(28.dp)
+            .height(sizing.tickerHeight)
             .background(Color(0xFF0A0C11))
             .border(width = 0.5.dp, color = Color(0xFF1E2230))
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = sizing.navTabPaddingH * 0.8f),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -60,18 +63,18 @@ fun LiveTickerBar(
                     text = "LIVE: ",
                     color = Color(0xFFFF4D6D),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
+                    fontSize = sizing.tickerFontSp
                 )
                 Text(
                     text = "${liveBoss.definition.name} ",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 11.sp
+                    fontSize = sizing.tickerFontSp
                 )
                 Text(
                     text = "(${liveBoss.minutesLeft}m left)",
                     color = Gw2Themes.TextMuted,
-                    fontSize = 10.sp
+                    fontSize = sizing.tickerFontSp * 0.9f
                 )
             } else if (liveBoss != null) {
                 Box(
@@ -85,24 +88,24 @@ fun LiveTickerBar(
                     text = "UPCOMING: ",
                     color = Gw2Themes.WaypointYellow,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 11.sp
+                    fontSize = sizing.tickerFontSp
                 )
                 Text(
                     text = "${liveBoss.definition.name} ",
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 11.sp
+                    fontSize = sizing.tickerFontSp
                 )
                 Text(
                     text = "(in ${liveBoss.minutesUntil}m at ${liveBoss.definition.zone})",
                     color = Gw2Themes.TextMuted,
-                    fontSize = 10.sp
+                    fontSize = sizing.tickerFontSp * 0.9f
                 )
             } else {
                 Text(
                     text = "Tyria World Event Tracker Active",
                     color = Gw2Themes.TextMuted,
-                    fontSize = 11.sp
+                    fontSize = sizing.tickerFontSp
                 )
             }
         }
@@ -114,12 +117,12 @@ fun LiveTickerBar(
                     .background(Color(0xFF1A2B20))
                     .border(0.5.dp, Gw2Themes.GreenAccent.copy(alpha = 0.7f), RoundedCornerShape(3.dp))
                     .clickable { onPasteWaypointToChat(liveBoss.definition.waypointCode) }
-                    .padding(horizontal = 7.dp, vertical = 2.5.dp)
+                    .padding(horizontal = sizing.tickerBtnPaddingH, vertical = 2.5.dp)
             ) {
                 Text(
                     text = "💬 Paste to Chat",
                     color = Gw2Themes.GreenAccent,
-                    fontSize = 10.sp,
+                    fontSize = sizing.tickerFontSp * 0.92f,
                     fontWeight = FontWeight.Bold
                 )
             }

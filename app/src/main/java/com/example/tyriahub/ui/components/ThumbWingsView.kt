@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 @Composable
@@ -80,14 +81,11 @@ fun ThumbWingsView(
             .background(Color(0xFF0A0C10))
             .padding(horizontal = 4.dp, vertical = 2.dp)
     ) {
+        val sizing = LocalDeckSizeConfig.current
         val totalHeight = maxHeight
-        // Calculate dynamic button height to fit Thor screen without vertical scroll
-        val calculatedRowHeight: Dp = ((totalHeight - 72.dp) / 3.1f).coerceIn(36.dp, 68.dp)
-        val btnHeight: Dp = when (state.sizeMode) {
-            "XS" -> (calculatedRowHeight * 0.82f).coerceAtLeast(32.dp)
-            "LG" -> calculatedRowHeight * 1.15f
-            else -> calculatedRowHeight
-        }
+        // Calculate dynamic button height to fit Thor screen, scaled with sizing.wingsRowHeightMultiplier
+        val calculatedRowHeight: Dp = ((totalHeight - 72.dp) / 3.1f).coerceIn(34.dp, 68.dp)
+        val btnHeight: Dp = (calculatedRowHeight * sizing.wingsRowHeightMultiplier).coerceIn(30.dp, 76.dp)
 
         val scrollState = rememberScrollState()
 
@@ -102,7 +100,7 @@ fun ThumbWingsView(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 2.dp),
+                        .padding(horizontal = sizing.wingsGap * 0.5f),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -114,13 +112,13 @@ fun ThumbWingsView(
                         Text(
                             text = "● ",
                             color = Gw2Themes.WaypointYellow,
-                            fontSize = 10.sp,
+                            fontSize = sizing.captionSp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             text = state.selectedBuild.mechanicsTitle,
                             color = Gw2Themes.WaypointYellow,
-                            fontSize = 10.5.sp,
+                            fontSize = sizing.bodySp,
                             fontWeight = FontWeight.SemiBold,
                             maxLines = 1
                         )
@@ -140,13 +138,13 @@ fun ThumbWingsView(
                                 gradient = mechGrad,
                                 borderColor = state.theme.mechanicBadgeBorder,
                                 isActivePressed = state.activePressedSlot == mech.slot,
-                                height = (btnHeight * 0.7f).coerceIn(26.dp, 38.dp),
+                                height = sizing.fKeyHeight,
                                 onClick = {
                                     onTriggerSkill(mech.slot, "${mech.slot} ${mech.name}", mech.keybind, true)
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .padding(horizontal = 1.5.dp),
+                                    .padding(horizontal = sizing.wingsGap * 0.4f),
                                 testTag = "mech_${mech.slot}"
                             )
                         }

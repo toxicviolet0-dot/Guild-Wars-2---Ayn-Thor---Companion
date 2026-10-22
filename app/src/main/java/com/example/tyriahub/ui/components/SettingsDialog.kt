@@ -42,10 +42,12 @@ import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -277,7 +279,9 @@ private fun Gw2ApiConfigSection(
     viewModel: MainViewModel
 ) {
     val clipboardManager = LocalClipboardManager.current
-    var inputKey by remember { mutableStateOf(state.apiKey) }
+    var inputKey by remember(state.apiKey, state.isExampleData) {
+        mutableStateOf(if (state.isExampleData) "" else state.apiKey)
+    }
     var hideKey by remember { mutableStateOf(true) }
 
     ConfigCard(title = "🔑 Guild Wars 2 ArenaNet API Key") {
@@ -339,9 +343,15 @@ private fun Gw2ApiConfigSection(
         ) {
             Button(
                 onClick = {
-                    if (inputKey.isNotBlank()) {
-                        viewModel.prefs.apiKey = inputKey.trim()
-                        viewModel.fetchAccountData(inputKey.trim())
+                    val key = inputKey.trim()
+                    if (key.isNotBlank()) {
+                        if (key.startsWith("EXAMPLE", ignoreCase = true) || key.contains("TEST", ignoreCase = true)) {
+                            viewModel.prefs.apiKey = ""
+                            viewModel.loadExampleData(notify = true)
+                        } else {
+                            viewModel.prefs.apiKey = key
+                            viewModel.fetchAccountData(key)
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f),
@@ -357,12 +367,12 @@ private fun Gw2ApiConfigSection(
                 )
             }
 
-            if (state.apiKey.isNotBlank()) {
+            if (state.apiKey.isNotBlank() || state.isExampleData) {
                 Button(
                     onClick = {
                         inputKey = ""
                         viewModel.prefs.apiKey = ""
-                        viewModel.fetchAccountData("")
+                        viewModel.clearExampleData()
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B151E)),
                     shape = RoundedCornerShape(6.dp)
@@ -379,7 +389,7 @@ private fun Gw2ApiConfigSection(
             }
         }
 
-        if (state.apiErrorMessage != null) {
+        if (state.apiErrorMessage != null && !state.isExampleData) {
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier
@@ -400,6 +410,79 @@ private fun Gw2ApiConfigSection(
                     text = state.apiErrorMessage,
                     color = Color(0xFFFF859B),
                     fontSize = 11.sp
+                )
+            }
+        }
+    }
+
+    // Example / Demo Data for Testing
+    ConfigCard(title = "🧪 Example Data for Testing") {
+        Text(
+            text = "Test dual-screen layout, 9 level 80 profession characters, full Ascended/Legendary equipment, and live currency tickers immediately without needing an ArenaNet API key.",
+            color = Gw2Themes.TextMuted,
+            fontSize = 11.sp
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (state.isExampleData) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF132838))
+                    .border(1.dp, Gw2Themes.CyanAccent, RoundedCornerShape(6.dp))
+                    .padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "✓ Example Data Active: ${state.account?.name ?: "CommanderTyria.7492"}",
+                        color = Gw2Themes.CyanAccent,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "9 Characters • 1,485 Gold • 28,450 AP • All Expansions",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 10.sp
+                    )
+                }
+
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedButton(
+                        onClick = { viewModel.loadExampleData(notify = true) },
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Gw2Themes.CyanAccent),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Gw2Themes.CyanAccent),
+                        shape = RoundedCornerShape(4.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("Reload", fontSize = 10.sp)
+                    }
+
+                    Button(
+                        onClick = { viewModel.clearExampleData() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B151E)),
+                        shape = RoundedCornerShape(4.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text("Clear", color = Color(0xFFFF5277), fontSize = 10.sp)
+                    }
+                }
+            }
+        } else {
+            Button(
+                onClick = { viewModel.loadExampleData(notify = true) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF132838)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Gw2Themes.CyanAccent),
+                shape = RoundedCornerShape(6.dp)
+            ) {
+                Text(
+                    text = "🧪 Load Example Data for Testing",
+                    fontSize = 11.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Gw2Themes.CyanAccent
                 )
             }
         }
@@ -671,15 +754,19 @@ private fun DisplayConfigSection(
                         HandheldDisplayManager.findBottomDisplay(context)
                     }
 
-                    val intent = Intent(context, TyriaOverlayService::class.java).apply {
-                        putExtra(TyriaOverlayService.EXTRA_TARGET_DISPLAY_ID, targetDisplay.displayId)
+                    try {
+                        val intent = Intent(context, TyriaOverlayService::class.java).apply {
+                            putExtra(TyriaOverlayService.EXTRA_TARGET_DISPLAY_ID, targetDisplay.displayId)
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            context.startForegroundService(intent)
+                        } else {
+                            context.startService(intent)
+                        }
+                        (context as? Activity)?.moveTaskToBack(true)
+                    } catch (e: Exception) {
+                        android.util.Log.e("SettingsDialog", "Failed to start overlay service: ${e.message}", e)
                     }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        context.startForegroundService(intent)
-                    } else {
-                        context.startService(intent)
-                    }
-                    (context as? Activity)?.moveTaskToBack(true)
                 }
             },
             modifier = Modifier.fillMaxWidth(),

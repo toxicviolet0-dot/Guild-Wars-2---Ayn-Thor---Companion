@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 @Composable
@@ -32,11 +33,8 @@ fun CombatBarView(
     onTriggerSkill: (slotName: String, actionLabel: String, keybind: String, isHeavy: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val btnHeight: Dp = when (state.sizeMode) {
-        "XS" -> 48.dp
-        "LG" -> 68.dp
-        else -> 58.dp
-    }
+    val sizing = LocalDeckSizeConfig.current
+    val btnHeight: Dp = sizing.combatBarSlotSize
 
     val weaponGrad = Brush.verticalGradient(listOf(Color(0xFF4A2518), Color(0xFF2E1710)))
     val weaponBorder = Color(0xFF8C3E1F)
@@ -56,9 +54,9 @@ fun CombatBarView(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0A0C10))
-            .padding(12.dp)
+            .padding(sizing.cardPadding)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
     ) {
         // Top Profession Mechanics
         Row(

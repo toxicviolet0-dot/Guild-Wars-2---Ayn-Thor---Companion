@@ -259,7 +259,7 @@ fun SetupWizardDialog(
             // Finish Buttons
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 OutlinedButton(
                     onClick = {
@@ -269,18 +269,30 @@ fun SetupWizardDialog(
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Gw2Themes.TextMuted)
                 ) {
-                    Text("Skip API & Use Core Builds", fontSize = 11.sp)
+                    Text("Skip API", fontSize = 11.sp)
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        onComplete("", sizeMode, hapticsEnabled)
+                    },
+                    modifier = Modifier.weight(1.3f).height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Gw2Themes.CyanAccent),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Gw2Themes.CyanAccent)
+                ) {
+                    Text("🧪 Test Data", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
 
                 Button(
                     onClick = {
                         onComplete(apiKey, sizeMode, hapticsEnabled)
                     },
-                    modifier = Modifier.weight(1f).height(44.dp),
+                    modifier = Modifier.weight(1.4f).height(44.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Gw2Themes.GoldAccent)
                 ) {
-                    Text("Finish & Launch Deck", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Launch Deck", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 }
             }
         }

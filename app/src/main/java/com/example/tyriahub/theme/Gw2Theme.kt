@@ -135,6 +135,8 @@ object Gw2Themes {
     val TextMuted = Color(0xFF8A93A6)
     val TextBright = Color(0xFFF1F5F9)
     val GoldAccent = Color(0xFFE5B869)
+    val SilverAccent = Color(0xFFCBD5E1)
+    val CopperAccent = Color(0xFFD97706)
     val CyanAccent = Color(0xFF4DEEEA)
     val GreenAccent = Color(0xFF4EBA33)
     val DangerRed = Color(0xFFFF4D6D)

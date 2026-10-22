@@ -66,7 +66,8 @@ fun DailiesView(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        if (state.apiKey.isBlank() || state.tokenInfo == null) {
+        val isAccountUnlocked = state.isExampleData || (state.apiKey.isNotBlank() && state.tokenInfo != null)
+        if (!isAccountUnlocked) {
             // Locked State - API Key required per user requirement
             Box(
                 modifier = Modifier
@@ -119,7 +120,7 @@ fun DailiesView(
                         shape = RoundedCornerShape(8.dp)
                     )
 
-                    if (state.apiErrorMessage != null) {
+                    if (state.apiErrorMessage != null && !state.isExampleData) {
                         Text(
                             text = state.apiErrorMessage,
                             color = Gw2Themes.DangerRed,
@@ -179,13 +180,13 @@ fun DailiesView(
                     Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
-                            text = state.account?.name ?: state.tokenInfo.name,
+                            text = state.account?.name ?: state.tokenInfo?.name ?: "GW2 Account",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
                         Text(
-                            text = "Token: ${state.tokenInfo.name} • Permissions: ${state.tokenInfo.permissions.joinToString(", ")}",
+                            text = "Token: ${state.tokenInfo?.name ?: "Active"} • Permissions: ${state.tokenInfo?.permissions?.joinToString(", ") ?: "All"}",
                             color = Gw2Themes.TextMuted,
                             fontSize = 10.sp
                         )

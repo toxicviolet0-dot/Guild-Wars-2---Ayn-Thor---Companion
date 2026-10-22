@@ -29,6 +29,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.example.tyriahub.model.CharacterResponse
 import com.example.tyriahub.model.FormattedCurrency
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 @Composable
@@ -54,19 +56,24 @@ fun CharactersView(
     state: HubUiState,
     onConnectApiKey: (String) -> Unit,
     onSelectCharacter: (CharacterResponse) -> Unit,
+    onOpenInventory: (() -> Unit)? = null,
+    onLoadExampleData: (() -> Unit)? = null,
+    onClearExampleData: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    var apiKeyInput by remember(state.apiKey) { mutableStateOf(state.apiKey) }
+    val sizing = LocalDeckSizeConfig.current
+    var apiKeyInput by remember(state.apiKey) { mutableStateOf(if (state.isExampleData) "" else state.apiKey) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color(0xFF0A0C10))
-            .padding(10.dp)
+            .padding(sizing.cardPadding)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
     ) {
-        if (state.apiKey.isBlank() || state.tokenInfo == null) {
+        val isAccountUnlocked = state.isExampleData || (state.apiKey.isNotBlank() && state.tokenInfo != null)
+        if (!isAccountUnlocked) {
             // Locked State - API Key required per user requirement
             Box(
                 modifier = Modifier
@@ -95,7 +102,7 @@ fun CharactersView(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Connect your official GW2 API Key (with account, characters, and inventories scopes) to inspect your characters, wallet, and gear, and auto-sync your touch deck.",
+                        text = "Connect your official GW2 API Key (with account, characters, and inventories scopes) to inspect your characters, wallet, and gear, or load testing example data.",
                         color = Gw2Themes.TextMuted,
                         fontSize = 11.5.sp,
                         lineHeight = 15.sp
@@ -119,7 +126,7 @@ fun CharactersView(
                         shape = RoundedCornerShape(6.dp)
                     )
 
-                    if (state.apiErrorMessage != null) {
+                    if (state.apiErrorMessage != null && !state.isExampleData) {
                         Text(
                             text = state.apiErrorMessage,
                             color = Gw2Themes.DangerRed,
@@ -127,29 +134,83 @@ fun CharactersView(
                         )
                     }
 
-                    Button(
-                        onClick = { onConnectApiKey(apiKeyInput) },
-                        enabled = apiKeyInput.isNotBlank() && !state.isApiLoading,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = state.theme.primaryAccent
-                        ),
-                        shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.height(40.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        if (state.isApiLoading) {
-                            CircularProgressIndicator(
-                                color = Color.White,
-                                modifier = Modifier.size(14.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
+                        Button(
+                            onClick = { onConnectApiKey(apiKeyInput) },
+                            enabled = apiKeyInput.isNotBlank() && !state.isApiLoading,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = state.theme.primaryAccent
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier.weight(1f).height(40.dp)
+                        ) {
+                            if (state.isApiLoading) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text("Connect Account", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
                         }
-                        Text("Connect Account", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+
+                        if (onLoadExampleData != null) {
+                            OutlinedButton(
+                                onClick = { onLoadExampleData() },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Gw2Themes.CyanAccent),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Gw2Themes.CyanAccent),
+                                shape = RoundedCornerShape(6.dp),
+                                modifier = Modifier.weight(1f).height(40.dp)
+                            ) {
+                                Text("🧪 Load Test Data", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
                     }
                 }
             }
         } else {
             // Connected Account State
+            if (state.isExampleData) {
+                // Testing Data Notice Banner
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF10232B))
+                        .border(1.dp, Gw2Themes.CyanAccent.copy(alpha = 0.8f), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🧪", fontSize = 13.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Testing Mode: Example Account (${state.characterList.size} characters, wallet & gear)",
+                            color = Gw2Themes.CyanAccent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = "Clear Data",
+                            color = Color(0xFFFF859B),
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clickable { onClearExampleData?.invoke() }
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
             val coins = FormattedCurrency.fromCoins(state.walletCoins)
 
             // Header Banner
@@ -173,13 +234,13 @@ fun CharactersView(
                     Spacer(modifier = Modifier.width(6.dp))
                     Column {
                         Text(
-                            text = state.account?.name ?: state.tokenInfo.name,
+                            text = state.account?.name ?: state.tokenInfo?.name ?: "GW2 Account",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
                         Text(
-                            text = "Token: ${state.tokenInfo.name}",
+                            text = "Token: ${state.tokenInfo?.name ?: "Active"}",
                             color = Gw2Themes.TextMuted,
                             fontSize = 10.sp
                         )
@@ -289,11 +350,33 @@ fun CharactersView(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "Synced: ${activeChar.profession}",
-                        color = state.theme.textAccent,
-                        fontSize = 10.5.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (onOpenInventory != null) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(state.theme.primaryAccent.copy(alpha = 0.2f))
+                                    .border(0.5.dp, state.theme.primaryAccent, RoundedCornerShape(4.dp))
+                                    .clickable { onOpenInventory() }
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "🎒 View Bags & Inventory ➔",
+                                    color = Color.White,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                        Text(
+                            text = "Synced: ${activeChar.profession}",
+                            color = state.theme.textAccent,
+                            fontSize = 10.5.sp
+                        )
+                    }
                 }
 
                 Row(

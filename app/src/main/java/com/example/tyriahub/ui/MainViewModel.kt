@@ -14,8 +14,11 @@ import com.example.tyriahub.ime.TyriaHubInputMethodService
 import com.example.tyriahub.model.AccountResponse
 import com.example.tyriahub.model.ActiveBossStatus
 import com.example.tyriahub.model.CharacterResponse
+import com.example.tyriahub.model.ExampleData
 import com.example.tyriahub.model.PresetBuilds
 import com.example.tyriahub.model.ProfessionBuild
+import com.example.tyriahub.model.Gw2ItemCatalog
+import com.example.tyriahub.model.InventoryItem
 import com.example.tyriahub.model.TokenInfoResponse
 import com.example.tyriahub.model.TyrianTimeStatus
 import com.example.tyriahub.model.WorldBossRepository
@@ -28,6 +31,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.supervisorScope
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,7 +44,8 @@ enum class HubTab {
     TOUCH_DECK,
     TIMERS,
     WIZARDS_VAULT,
-    CHARACTERS
+    CHARACTERS,
+    INVENTORY
 }
 
 enum class DeckSubMode {
@@ -91,7 +97,8 @@ data class HubUiState(
     val gems: Long = 0,
     val astralAcclaim: Long = 0,
     val isApiLoading: Boolean = false,
-    val apiErrorMessage: String? = null
+    val apiErrorMessage: String? = null,
+    val isExampleData: Boolean = false
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -139,8 +146,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         loadSavedBuild(prefs.selectedBuildId)
         applyThemeOverride(prefs.themeOverride)
         startTimerTicker()
+        if (prefs.apiKey.startsWith("EXAMPLE", ignoreCase = true) || prefs.apiKey.contains("TEST", ignoreCase = true)) {
+            prefs.apiKey = ""
+        }
         if (prefs.apiKey.isNotBlank()) {
             fetchAccountData(prefs.apiKey)
+        } else {
+            loadExampleData(notify = false)
         }
     }
 
@@ -354,7 +366,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeSetup(apiKey: String, sizeMode: String, hapticsEnabled: Boolean) {
         prefs.isSetupCompleted = true
-        prefs.apiKey = apiKey.trim()
+        val cleanKey = apiKey.trim()
+        val isExampleKey = cleanKey.startsWith("EXAMPLE", ignoreCase = true) || cleanKey.contains("TEST", ignoreCase = true)
+        prefs.apiKey = if (isExampleKey) "" else cleanKey
         prefs.buttonSizeMode = sizeMode
         prefs.hapticsEnabled = hapticsEnabled
         haptics.isEnabled = hapticsEnabled
@@ -363,12 +377,65 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 showSetupWizard = false,
                 sizeMode = sizeMode,
                 isHapticsEnabled = hapticsEnabled,
-                apiKey = apiKey.trim(),
+                apiKey = if (isExampleKey) "" else cleanKey,
+                apiErrorMessage = null,
                 toastMessage = "Setup complete! Tyria Hub ready."
             )
         }
-        if (apiKey.isNotBlank()) {
-            fetchAccountData(apiKey)
+        if (cleanKey.isNotBlank() && !isExampleKey) {
+            fetchAccountData(cleanKey)
+        } else {
+            loadExampleData(notify = false)
+        }
+    }
+
+    fun loadExampleData(notify: Boolean = true) {
+        val chars = ExampleData.characters
+        val firstChar = chars.firstOrNull()
+        val defaultBuild = PresetBuilds.Dragonhunter
+        val defaultTheme = Gw2Themes.Guardian
+
+        _uiState.update {
+            it.copy(
+                isExampleData = true,
+                apiKey = if (it.apiKey.startsWith("EXAMPLE", ignoreCase = true)) "" else it.apiKey,
+                tokenInfo = ExampleData.tokenInfo,
+                account = ExampleData.account,
+                characterList = chars,
+                selectedCharacter = firstChar,
+                walletCoins = ExampleData.walletCoins,
+                karma = ExampleData.karma,
+                laurels = ExampleData.laurels,
+                gems = ExampleData.gems,
+                astralAcclaim = ExampleData.astralAcclaim,
+                selectedBuild = defaultBuild,
+                theme = defaultTheme,
+                isApiLoading = false,
+                apiErrorMessage = null,
+                toastMessage = if (notify) "🧪 Loaded Example Testing Data (${ExampleData.account.name})" else it.toastMessage
+            )
+        }
+    }
+
+    fun clearExampleData() {
+        prefs.apiKey = ""
+        _uiState.update {
+            it.copy(
+                isExampleData = false,
+                apiKey = "",
+                tokenInfo = null,
+                account = null,
+                characterList = emptyList(),
+                selectedCharacter = null,
+                walletCoins = 0,
+                karma = 0,
+                laurels = 0,
+                gems = 0,
+                astralAcclaim = 0,
+                isApiLoading = false,
+                apiErrorMessage = null,
+                toastMessage = "Cleared example testing data"
+            )
         }
     }
 
@@ -446,70 +513,137 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun fetchAccountData(apiKey: String) {
         val cleanKey = apiKey.trim()
         if (cleanKey.isBlank()) return
+        if (cleanKey.startsWith("EXAMPLE", ignoreCase = true) || cleanKey.contains("TEST", ignoreCase = true)) {
+            loadExampleData(notify = true)
+            return
+        }
 
-        _uiState.update { it.copy(isApiLoading = true, apiErrorMessage = null) }
+        _uiState.update { it.copy(isApiLoading = true, apiErrorMessage = null, isExampleData = false) }
         viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val bearer = "Bearer $cleanKey"
+            val bearer = "Bearer $cleanKey"
 
-                // Multithreaded concurrent fetching of core account endpoints in parallel
-                val tokenDeferred = async { Gw2ApiClient.api.getTokenInfo(bearer) }
-                val accountDeferred = async {
-                    try { Gw2ApiClient.api.getAccount(bearer) } catch (_: Exception) { null }
+            // Step 1: Safely verify the token first.
+            // Catch HttpException (HTTP 401 / 403) explicitly to prevent fatal crash on invalid API keys!
+            val token = try {
+                Gw2ApiClient.api.getTokenInfo(bearer)
+            } catch (e: HttpException) {
+                val errorMsg = if (e.code() == 401 || e.code() == 403) {
+                    "Invalid API Key (HTTP ${e.code()} Unauthorized). Please check your GW2 API key permissions."
+                } else {
+                    "GW2 API Error: HTTP ${e.code()}"
                 }
-                val walletDeferred = async {
-                    try { Gw2ApiClient.api.getWallet(bearer) } catch (_: Exception) { emptyList() }
-                }
-                val charNamesDeferred = async {
-                    try { Gw2ApiClient.api.getCharacterNames(bearer) } catch (_: Exception) { emptyList() }
-                }
-
-                val token = tokenDeferred.await()
-                val account = accountDeferred.await()
-                val wallet = walletDeferred.await()
-                val characterNames = charNamesDeferred.await()
-
-                val coins = wallet.find { it.id == 1 }?.value ?: 0
-                val karma = wallet.find { it.id == 2 }?.value ?: 0
-                val laurels = wallet.find { it.id == 3 }?.value ?: 0
-                val gems = wallet.find { it.id == 4 }?.value ?: 0
-                val astral = wallet.find { it.id == 67 }?.value ?: 0
-
-                // Multithreaded parallel fetching of up to 8 character details simultaneously
-                val characterDeferreds = characterNames.take(8).map { name ->
-                    async {
-                        try {
-                            Gw2ApiClient.api.getCharacter(name, bearer)
-                        } catch (_: Exception) {
-                            null
-                        }
-                    }
-                }
-                val characters = characterDeferreds.awaitAll().filterNotNull()
-
                 _uiState.update {
                     it.copy(
                         isApiLoading = false,
-                        apiKey = cleanKey,
-                        tokenInfo = token,
-                        account = account,
-                        characterList = characters,
-                        selectedCharacter = characters.firstOrNull(),
-                        walletCoins = coins,
-                        karma = karma,
-                        laurels = laurels,
-                        gems = gems,
-                        astralAcclaim = astral,
-                        toastMessage = "Connected to GW2 Account: ${account?.name ?: token.name}"
+                        apiErrorMessage = errorMsg,
+                        toastMessage = errorMsg
                     )
+                }
+                return@launch
+            } catch (e: Exception) {
+                val errorMsg = "Connection Error: ${e.localizedMessage ?: "Failed to reach GW2 API"}"
+                _uiState.update {
+                    it.copy(
+                        isApiLoading = false,
+                        apiErrorMessage = errorMsg,
+                        toastMessage = errorMsg
+                    )
+                }
+                return@launch
+            }
+
+            // Step 2: Use supervisorScope so that any secondary endpoint failure will NOT cancel the coroutine or crash the app.
+            try {
+                supervisorScope {
+                    val accountDeferred = async {
+                        try { Gw2ApiClient.api.getAccount(bearer) } catch (_: Exception) { null }
+                    }
+                    val walletDeferred = async {
+                        try { Gw2ApiClient.api.getWallet(bearer) } catch (_: Exception) { emptyList() }
+                    }
+                    val charNamesDeferred = async {
+                        try { Gw2ApiClient.api.getCharacterNames(bearer) } catch (_: Exception) { emptyList() }
+                    }
+
+                    val account = accountDeferred.await()
+                    val wallet = walletDeferred.await()
+                    val characterNames = charNamesDeferred.await()
+
+                    val coins = wallet.find { it.id == 1 }?.value ?: 0
+                    val karma = wallet.find { it.id == 2 }?.value ?: 0
+                    val laurels = wallet.find { it.id == 3 }?.value ?: 0
+                    val gems = wallet.find { it.id == 4 }?.value ?: 0
+                    val astral = wallet.find { it.id == 67 }?.value ?: 0
+
+                    // Multithreaded parallel fetching of up to 8 character details
+                    val characterDeferreds = characterNames.take(8).map { name ->
+                        async {
+                            try {
+                                Gw2ApiClient.api.getCharacter(name, bearer)
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+                    }
+                    val rawCharacters = characterDeferreds.awaitAll().filterNotNull()
+                    val characters = rawCharacters.map { char ->
+                        val resolvedBags = char.bags.map { bag ->
+                            bag?.copy(
+                                inventory = bag.inventory.map { Gw2ItemCatalog.resolve(it) }
+                            )
+                        }
+                        char.copy(bags = resolvedBags)
+                    }
+
+                    _uiState.update {
+                        it.copy(
+                            isApiLoading = false,
+                            apiKey = cleanKey,
+                            tokenInfo = token,
+                            account = account,
+                            characterList = characters,
+                            selectedCharacter = characters.firstOrNull(),
+                            walletCoins = coins,
+                            karma = karma,
+                            laurels = laurels,
+                            gems = gems,
+                            astralAcclaim = astral,
+                            toastMessage = "Connected to GW2 Account: ${account?.name ?: token.name}",
+                            isExampleData = false
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
                         isApiLoading = false,
-                        apiErrorMessage = "API Key Error: ${e.message ?: "Failed to verify token"}"
+                        apiErrorMessage = "Data Loading Error: ${e.message ?: "Failed to load character data"}"
                     )
                 }
+            }
+        }
+    }
+
+    fun pasteItemToChat(item: InventoryItem) {
+        val textToPaste = item.chatCode?.takeIf { it.isNotBlank() } ?: "[${item.name ?: "Item"}]"
+        haptics.playHeavyTap()
+        copyWaypoint(textToPaste)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            val delayMs = _uiState.value.chatMacroDelayMs.coerceAtLeast(60L)
+            FastKeyInjector.sendEnter()
+            delay(delayMs)
+            FastKeyInjector.sendTextAsync(textToPaste)
+            delay(delayMs.coerceAtLeast(80L))
+            FastKeyInjector.sendEnter()
+            delay(60L)
+            FastKeyInjector.sendEnter()
+
+            _uiState.update {
+                it.copy(
+                    lastActionFeedback = "💬 Broadcast $textToPaste to GW2 Chat",
+                    toastMessage = "Pinged $textToPaste to GW2 Chat!"
+                )
             }
         }
     }

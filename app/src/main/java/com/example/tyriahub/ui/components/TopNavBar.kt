@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubTab
 import com.example.tyriahub.ui.HubUiState
 
@@ -53,17 +54,18 @@ fun TopNavBar(
     onResetSetup: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val sizing = LocalDeckSizeConfig.current
     val scrollState = rememberScrollState()
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.dp)
+            .height(sizing.navHeight)
             .background(Color(0xFF0F1117))
             .horizontalScroll(scrollState)
-            .padding(horizontal = 6.dp),
+            .padding(horizontal = sizing.navTabPaddingH * 0.7f),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
     ) {
         // Collapsed 4 Tabs
         Row(
@@ -93,6 +95,12 @@ fun TopNavBar(
                 isSelected = state.currentTab == HubTab.CHARACTERS,
                 activeBorderColor = state.theme.primaryAccent,
                 onClick = { onSelectTab(HubTab.CHARACTERS) }
+            )
+            TabPill(
+                label = "🎒 Inventory",
+                isSelected = state.currentTab == HubTab.INVENTORY,
+                activeBorderColor = state.theme.primaryAccent,
+                onClick = { onSelectTab(HubTab.INVENTORY) }
             )
         }
 
@@ -188,21 +196,22 @@ private fun TabPill(
     activeBorderColor: Color,
     onClick: () -> Unit
 ) {
+    val sizing = LocalDeckSizeConfig.current
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(sizing.touchButtonCornerRadius))
             .background(if (isSelected) Color(0xFF1C2230) else Color(0xFF13151D))
             .border(
                 width = 1.dp,
                 color = if (isSelected) activeBorderColor else Gw2Themes.BorderSubtle,
-                shape = RoundedCornerShape(6.dp)
+                shape = RoundedCornerShape(sizing.touchButtonCornerRadius)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 5.dp)
+            .padding(horizontal = sizing.navTabPaddingH, vertical = sizing.navTabPaddingV)
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = sizing.navTabFontSp,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
             color = if (isSelected) Color.White else Gw2Themes.TextMuted
         )

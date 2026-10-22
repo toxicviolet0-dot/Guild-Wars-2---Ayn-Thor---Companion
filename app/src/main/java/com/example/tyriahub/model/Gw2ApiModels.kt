@@ -42,6 +42,32 @@ data class CharacterEquipmentItem(
 )
 
 @JsonClass(generateAdapter = true)
+data class InventoryItem(
+    val id: Int = 0,
+    val count: Int = 1,
+    val charges: Int? = null,
+    val skin: Int? = null,
+    val upgrades: List<Int> = emptyList(),
+    val infusions: List<Int> = emptyList(),
+    val binding: String? = null,
+    @Json(name = "bound_to") val boundTo: String? = null,
+    val name: String? = null,
+    val rarity: String? = null,
+    val type: String? = null,
+    val description: String? = null,
+    val icon: String? = null,
+    @Json(name = "chat_code") val chatCode: String? = null,
+    @Json(name = "vendor_value") val vendorValue: Long? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class CharacterBag(
+    val id: Int = 0,
+    val size: Int = 20,
+    val inventory: List<InventoryItem?> = emptyList()
+)
+
+@JsonClass(generateAdapter = true)
 data class CharacterResponse(
     val name: String = "",
     val race: String = "",
@@ -49,7 +75,8 @@ data class CharacterResponse(
     val profession: String = "",
     val level: Int = 80,
     val deaths: Int = 0,
-    val equipment: List<CharacterEquipmentItem> = emptyList()
+    val equipment: List<CharacterEquipmentItem> = emptyList(),
+    val bags: List<CharacterBag?> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)

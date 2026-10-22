@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.example.tyriahub.model.ActiveBossStatus
 import com.example.tyriahub.model.BossCategory
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.HubUiState
 
 @Composable
@@ -126,12 +127,13 @@ fun BossHudView(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        val sizing = LocalDeckSizeConfig.current
+        Spacer(modifier = Modifier.height(sizing.cardSpacing))
 
         // Boss Items List
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(sizing.cardSpacing),
             contentPadding = PaddingValues(bottom = 12.dp)
         ) {
             items(filteredList) { bossStatus ->
@@ -149,20 +151,21 @@ private fun BossEventCard(
     status: ActiveBossStatus,
     onCopyWaypoint: (String) -> Unit
 ) {
+    val sizing = LocalDeckSizeConfig.current
     val def = status.definition
     val isLive = status.isLive
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(sizing.touchButtonCornerRadius))
             .background(if (isLive) Color(0xFF1F1216) else Color(0xFF11141C))
             .border(
                 width = 1.dp,
                 color = if (isLive) Color(0xFFFF3B5C) else Gw2Themes.BorderSubtle,
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(sizing.touchButtonCornerRadius)
             )
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = sizing.cardPadding * 1.2f, vertical = sizing.cardPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -173,30 +176,30 @@ private fun BossEventCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(9.dp * sizing.iconScale)
                     .clip(CircleShape)
                     .background(if (isLive) Color(0xFFFF3B5C) else Color(0xFF384358))
             )
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp * sizing.spacingScale))
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = def.name,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
+                        fontSize = sizing.titleSp
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(RoundedCornerShape(3.dp))
                             .background(Color(0xFF1E2433))
-                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
                     ) {
                         Text(
                             text = def.category.name,
                             color = Gw2Themes.TextMuted,
-                            fontSize = 9.sp,
+                            fontSize = sizing.captionSp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -205,7 +208,7 @@ private fun BossEventCard(
                 Text(
                     text = "${def.zone} • ${status.nextSpawnUtc}",
                     color = Gw2Themes.TextMuted,
-                    fontSize = 11.sp
+                    fontSize = sizing.bodySp
                 )
             }
         }
@@ -213,44 +216,44 @@ private fun BossEventCard(
         // Right status and waypoint button
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(sizing.cardSpacing)
         ) {
             if (isLive) {
                 Text(
                     text = "${status.minutesLeft}m remaining",
                     color = Color(0xFFFF4D6D),
                     fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp
+                    fontSize = sizing.bodySp
                 )
             } else {
                 Text(
                     text = "in ${status.minutesUntil}m",
                     color = Gw2Themes.WaypointYellow,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 12.sp
+                    fontSize = sizing.bodySp
                 )
             }
 
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(RoundedCornerShape(sizing.touchButtonCornerRadius * 0.7f))
                     .background(Color(0xFF1B2230))
-                    .border(0.5.dp, Gw2Themes.GoldAccent.copy(alpha = 0.7f), RoundedCornerShape(6.dp))
+                    .border(0.5.dp, Gw2Themes.GoldAccent.copy(alpha = 0.7f), RoundedCornerShape(sizing.touchButtonCornerRadius * 0.7f))
                     .clickable { onCopyWaypoint(def.waypointCode) }
-                    .padding(horizontal = 8.dp, vertical = 5.dp)
+                    .padding(horizontal = sizing.cardPadding, vertical = 4.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.ContentCopy,
                         contentDescription = "Copy Waypoint",
                         tint = Gw2Themes.GoldAccent,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(11.dp * sizing.iconScale)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = def.waypointCode,
                         color = Gw2Themes.GoldAccent,
-                        fontSize = 11.sp,
+                        fontSize = sizing.bodySp,
                         fontWeight = FontWeight.Medium
                     )
                 }

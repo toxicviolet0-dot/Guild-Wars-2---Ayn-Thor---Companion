@@ -186,37 +186,45 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun checkAndTriggerAutoOverlay() {
-        val forceWindow = intent?.getBooleanExtra(EXTRA_FORCE_WINDOW, false) ?: false
-        if (forceWindow) return
+        try {
+            val forceWindow = intent?.getBooleanExtra(EXTRA_FORCE_WINDOW, false) ?: false
+            if (forceWindow) return
 
-        val prefs = SecurePreferences(this)
-        if (!prefs.autoLaunchOverlay) return
-        if (hasAutoLaunched) return
+            val prefs = SecurePreferences(this)
+            if (!prefs.autoLaunchOverlay) return
+            if (hasAutoLaunched) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
-            hasAutoLaunched = true
-            launchOverlayService()
-            moveTaskToBack(true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Settings.canDrawOverlays(this)) {
+                hasAutoLaunched = true
+                launchOverlayService()
+                moveTaskToBack(true)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed in checkAndTriggerAutoOverlay", e)
         }
     }
 
     fun launchOverlayService() {
-        val prefs = SecurePreferences(this)
-        val allDisplays = HandheldDisplayManager.getAllDisplays(this)
-        val targetDisplay = if (prefs.overlayDisplayId != -1) {
-            allDisplays.find { it.displayId == prefs.overlayDisplayId }
-                ?: HandheldDisplayManager.findBottomDisplay(this)
-        } else {
-            HandheldDisplayManager.findBottomDisplay(this)
-        }
+        try {
+            val prefs = SecurePreferences(this)
+            val allDisplays = HandheldDisplayManager.getAllDisplays(this)
+            val targetDisplay = if (prefs.overlayDisplayId != -1) {
+                allDisplays.find { it.displayId == prefs.overlayDisplayId }
+                    ?: HandheldDisplayManager.findBottomDisplay(this)
+            } else {
+                HandheldDisplayManager.findBottomDisplay(this)
+            }
 
-        val intent = Intent(this, TyriaOverlayService::class.java).apply {
-            putExtra(TyriaOverlayService.EXTRA_TARGET_DISPLAY_ID, targetDisplay.displayId)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
+            val intent = Intent(this, TyriaOverlayService::class.java).apply {
+                putExtra(TyriaOverlayService.EXTRA_TARGET_DISPLAY_ID, targetDisplay.displayId)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Failed to launch overlay service", e)
         }
     }
 

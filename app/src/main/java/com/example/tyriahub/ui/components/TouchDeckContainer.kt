@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.tyriahub.theme.Gw2Themes
+import com.example.tyriahub.theme.LocalDeckSizeConfig
 import com.example.tyriahub.ui.DeckSubMode
 import com.example.tyriahub.ui.HubUiState
 
@@ -104,21 +105,22 @@ private fun DeckSubTabPill(
     activeColor: Color,
     onClick: () -> Unit
 ) {
+    val sizing = LocalDeckSizeConfig.current
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(sizing.touchButtonCornerRadius * 0.7f))
             .background(if (isSelected) activeColor.copy(alpha = 0.22f) else Color(0xFF141724))
             .border(
                 width = 1.dp,
                 color = if (isSelected) activeColor else Gw2Themes.BorderSubtle,
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(sizing.touchButtonCornerRadius * 0.7f)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 3.dp)
+            .padding(horizontal = sizing.navTabPaddingH, vertical = sizing.navTabPaddingV * 0.7f)
     ) {
         Text(
             text = label,
-            fontSize = 10.5.sp,
+            fontSize = sizing.captionSp * 1.1f,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             color = if (isSelected) Color.White else Gw2Themes.TextMuted
         )
