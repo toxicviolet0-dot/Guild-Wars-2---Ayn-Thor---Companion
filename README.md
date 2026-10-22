@@ -104,14 +104,20 @@ app/src/main/java/com/example/
 ### Build Commands
 ```bash
 # Compile debug APK
-gradle assembleDebug
+./gradlew :app:assembleDebug
 
 # Run Robolectric unit tests
-gradle :app:testDebugUnitTest
+./gradlew :app:testDebugUnitTest
 
 # Install on connected device or emulator
-gradle installDebug
+./gradlew :app:installDebug
 ```
+
+### 🤖 Automated GitHub Actions CI/CD
+A GitHub Actions workflow is pre-configured at [`.github/workflows/build-apk.yml`](.github/workflows/build-apk.yml):
+- Automatically triggers on every push and pull request to `main` / `master`.
+- Executes the full Robolectric unit test suite.
+- Builds and packages `tyria-hub-debug-apk` as a downloadable artifact under the GitHub repository's **Actions** tab for direct sideloading onto the AYN Thor or any Android device.
 
 ---
 
