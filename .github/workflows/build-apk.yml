@@ -14,20 +14,21 @@ concurrency:
 jobs:
   build:
     name: Build & Test APK
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Prepare environment file
         run: |
@@ -59,7 +60,7 @@ jobs:
         run: ./gradlew :app:assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Upload Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: tyria-hub-debug-apk
@@ -71,7 +72,7 @@ jobs:
 
       - name: Upload Test Report on Failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-reports
           path: app/build/reports/tests/
